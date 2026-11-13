@@ -328,15 +328,15 @@ def fuse_detection_candidates(
 
 
 def _choose_candidate(candidates: list[dict], image_size: tuple[int, int] | None):
-    """Apply the established 3-point confidence band and center-distance tie-break."""
+    """Select the fused candidate nearest the detector-image center.
+
+    This is an isolated-view experiment. Confidence is used only to break
+    equal-distance ties; the established confidence-first selector remains
+    available separately for comparison.
+    """
     if not candidates:
         return None
-    highest_confidence = max(float(item["confidence"]) for item in candidates)
-    tied = [
-        item for item in candidates
-        if highest_confidence - float(item["confidence"]) <= DETECTION_CONFIDENCE_TOLERANCE
-    ]
-    if image_size and len(tied) > 1:
+    if image_size:
         image_width, image_height = map(float, image_size)
         center_x, center_y = image_width / 2.0, image_height / 2.0
 
@@ -350,8 +350,8 @@ def _choose_candidate(candidates: list[dict], image_size: tuple[int, int] | None
             )
             return distance_squared, -float(item["confidence"])
 
-        return min(tied, key=selection_key)
-    return max(tied, key=lambda item: float(item["confidence"]))
+        return min(candidates, key=selection_key)
+    return max(candidates, key=lambda item: float(item["confidence"]))
 
 
 def choose_fused_detection(result):
