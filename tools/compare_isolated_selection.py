@@ -151,6 +151,7 @@ def main():
     print(f"Model: {model_path}")
     print(f"Normalized size: {image.width}x{image.height}")
     print(f"Detector region: {region_width}% x {region_height}%")
+    print("Inference image size: 640")
     print(f"Inference IoU: {BOX_FUSION_CANDIDATE_IOU}")
 
     detector = YOLO(str(model_path))
@@ -158,6 +159,7 @@ def main():
         source=model_image,
         verbose=False,
         iou=BOX_FUSION_CANDIDATE_IOU,
+        imgsz=640,
     )[0]
 
     raw = []
