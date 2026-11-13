@@ -24,13 +24,13 @@ def test_view_dropzones_generate_explicit_manifest_and_unique_names():
     assert [item["angle_index"] for item in manifest] == [0, 0, 1, 2]
     assert [item["file_path"] for item in manifest] == [
         "same.jpg",
-        "isometric_same_2.jpg",
+        "isometric_same.jpg",
         "top_same.jpg",
         "face_same.jpg",
     ]
     assert [file.filename for file in files] == [
         "same.jpg",
-        "isometric_same_2.jpg",
+        "isometric_same.jpg",
         "top_same.jpg",
         "face_same.jpg",
     ]
