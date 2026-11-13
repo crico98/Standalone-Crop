@@ -163,21 +163,73 @@ def index():
     )
 
 
+def _collect_view_uploads():
+    """Build the explicit manifest from the three view-specific upload areas."""
+    files = []
+    manifest_payload = []
+    used_names = set()
+    view_fields = (
+        ("isometric", "isometric_images", 0),
+        ("top", "top_images", 1),
+        ("face", "face_images", 2),
+    )
+
+    for view, field_name, angle_index in view_fields:
+        for uploaded_file in request.files.getlist(field_name):
+            if not uploaded_file or not uploaded_file.filename:
+                continue
+
+            original_name = secure_filename(uploaded_file.filename)
+            if not original_name:
+                abort(400, "An uploaded image has an invalid filename.")
+
+            output_name = original_name
+            if output_name.casefold() in used_names:
+                stem = Path(original_name).stem or "cutter_image"
+                suffix = Path(original_name).suffix
+                output_name = f"{view}_{original_name}"
+                counter = 2
+                while output_name.casefold() in used_names:
+                    output_name = f"{view}_{stem}_{counter}{suffix}"
+                    counter += 1
+
+            used_names.add(output_name.casefold())
+            uploaded_file.filename = output_name
+            files.append(uploaded_file)
+            manifest_payload.append({
+                "file_path": output_name,
+                "angle_index": angle_index,
+            })
+
+    return files, manifest_payload
+
+
 @app.post("/upload")
 def upload():
-    files = [f for f in request.files.getlist("images") if f and f.filename]
+    files, manifest_payload = _collect_view_uploads()
+
+    # The prototype UI assigns views by the dropzone used. Keep the existing
+    # JSON-manifest upload path available for older clients and batch scripts.
+    if not manifest_payload:
+        files = [f for f in request.files.getlist("images") if f and f.filename]
+        if not files:
+            abort(400, "Add images to the Isometric, Top, or Face upload area.")
+        manifest_file = request.files.get("manifest")
+        if manifest_file is None or not manifest_file.filename:
+            abort(400, "Upload images into the view-specific areas.")
+        try:
+            manifest_payload = json.loads(manifest_file.read().decode("utf-8-sig"))
+        except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
+            abort(400, f"Invalid JSON manifest: {exc}")
+
     if not files:
         abort(400, "Choose at least one image.")
     if len(files) > MAX_FILES_PER_BATCH:
         abort(400, f"Too many images. Maximum per batch: {MAX_FILES_PER_BATCH}.")
 
-    manifest_file = request.files.get("manifest")
-    if manifest_file is None or not manifest_file.filename:
-        abort(400, "Upload the JSON manifest that pairs each photo filename with angle_index.")
     try:
-        manifest_payload = json.loads(manifest_file.read().decode("utf-8-sig"))
         manifest_items = normalize_manifest_records(manifest_payload)
-    except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
+    except (TypeError, ValueError) as exc:
         abort(400, f"Invalid JSON manifest: {exc}")
 
     # Match by photo basename. The manifest's angle_index is authoritative;
