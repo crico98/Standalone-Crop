@@ -6,6 +6,7 @@ on:
       - main
       - experiment/orientation-aware-top-isometric
       - feature/view-specific-crop-pipeline
+      - prototype/isolated-view-upload-dropzones-do-not-integrate
   pull_request:
 
 jobs:
