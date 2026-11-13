@@ -6,7 +6,7 @@ The validated crop-pipeline baseline is **feature/view-specific-crop-pipeline**.
 
 ## What the application does
 
-The Flask app accepts a batch of cutter photos and a JSON manifest. The manifest explicitly assigns each photo to a view:
+On this prototype branch, the Flask upload page has three separate multi-file dropzones. The server generates the JSON manifest from the dropzone used for each image. The manifest explicitly assigns each photo to a view:
 
 | angle_index | View | Processing order |
 |---:|---|---:|
