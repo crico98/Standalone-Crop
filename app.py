@@ -39,7 +39,7 @@ MAX_UPLOAD_MB = max(1, int(os.environ.get("CROPPER_MAX_UPLOAD_MB", "50000")))
 MAX_FILES_PER_BATCH = max(1, int(os.environ.get("CROPPER_MAX_FILES", "500")))
 
 MODEL_PATHS = {
-    "top": ROOT / "models" / "top_view" / "weights" / "best.pt",
+    "top": ROOT / "models" / "top_view_field_v1" / "weights" / "best.pt",
     "isometric": ROOT / "models" / "isometric_view" / "weights" / "best.pt",
 }
 EXPECTED_CLASS_NAMES = {"top": "full_cutter", "isometric": "diamond_table"}
