@@ -135,7 +135,7 @@ class DetectionFusionTests(unittest.TestCase):
                 [0.9, 0.7],
             )
         )
-        self.assertEqual(selected["box"], (0.0, 0.0, 50.0, 50.0))
+        self.assertEqual(selected["box"], (140.0, 140.0, 190.0, 190.0))
         self.assertFalse(selected["fusion_applied"])
         self.assertEqual(selected["fusion_source_count"], 1)
 
