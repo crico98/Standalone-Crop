@@ -8,8 +8,8 @@ The app has three independent view paths. View assignment comes from the JSON ma
 
 ## End-to-end processing flow
 
-1. **Upload:** the browser submits the selected photos and one JSON manifest to Flask POST /upload.
-2. **Manifest validation:** crop_pipeline.normalize_manifest_records validates each file_path and angle_index. Values 0, 1, and 2 map to Isometric, Top, and Face.
+1. **Upload:** on this prototype branch, the browser submits photos in three independent multi-file fields to Flask POST /upload: Isometric, Top, and Face. The server creates manifest records from the selected field (0 = Isometric, 1 = Top, 2 = Face). The legacy combined-photo plus JSON-manifest request remains supported.
+2. **Manifest validation:** crop_pipeline.normalize_manifest_records validates each generated or uploaded file_path and angle_index. Values 0, 1, and 2 map to Isometric, Top, and Face.
 3. **Matching:** the app matches each manifest record to exactly one uploaded image by basename. Missing, duplicate, unmatched, or unsupported records are rejected.
 4. **Stable grouping:** records are ordered Isometric first, Top second, Face third. Original order within each view is preserved.
 5. **Image normalization:** EXIF orientation is applied once. The normalized RGB working image is saved as working.png; subsequent model and crop coordinates refer to these normalized pixels.
