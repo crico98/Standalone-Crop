@@ -44,6 +44,9 @@ MODEL_PATHS = {
     "isometric": ROOT / "models" / "isometric_view" / "weights" / "best.pt",
 }
 EXPECTED_CLASS_NAMES = {"top": "full_cutter", "isometric": "diamond_table"}
+# The Top field checkpoint only returns usable detections at 640 on the
+# validated diagnostic image; keep Isometric on its checkpoint default pending validation.
+OBJECT_INFERENCE_IMAGE_SIZES = {"top": 640}
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
@@ -410,11 +413,15 @@ def process_object_item(batch_id: str, item: dict, image: Image.Image) -> None:
     detector = load_object_detector(view)
     # Preserve overlapping candidates before standard NMS can suppress them.
     # WBF then combines only overlapping boxes for the same crop target.
-    results = detector.predict(
-        source=model_image,
-        verbose=False,
-        iou=BOX_FUSION_CANDIDATE_IOU,
-    )
+    predict_options = {
+        "source": model_image,
+        "verbose": False,
+        "iou": BOX_FUSION_CANDIDATE_IOU,
+    }
+    inference_size = OBJECT_INFERENCE_IMAGE_SIZES.get(view)
+    if inference_size is not None:
+        predict_options["imgsz"] = inference_size
+    results = detector.predict(**predict_options)
     selected = choose_fused_detection(results[0])
     if selected is None:
         item["error"] = (
