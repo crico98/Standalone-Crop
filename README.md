@@ -2,7 +2,7 @@
 
 Cropper StandAlone is a local development and validation harness for the view-specific cutter crop pipeline intended for eventual integration into BitHub. It is not a production multi-user service.
 
-The current implementation is developed on **feature/view-specific-crop-pipeline**. The repository default branch is still **main**; use the feature branch when reviewing or running the current pipeline. Do not merge it into main or begin BitHub migration until the validation gates in the crop pipeline plan are complete and explicitly approved.
+The validated crop-pipeline baseline is **feature/view-specific-crop-pipeline**. This separate branch, **prototype/isolated-view-upload-dropzones-do-not-integrate**, adds a temporary three-dropzone upload interface for evaluation only. Do not merge this prototype into the main application; keep it isolated until upload UX integration is separately approved. The repository default branch remains **main**.
 
 ## What the application does
 
