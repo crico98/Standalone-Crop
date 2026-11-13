@@ -29,6 +29,7 @@ from crop_pipeline import (
 from image_orientation import normalize_uploaded_image, read_exif_orientation
 from face_model import FaceFinder
 from top_isometric_web import top_isometric
+from view_uploads import VIEW_UPLOAD_FIELDS, unique_view_filename
 
 ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
@@ -168,13 +169,7 @@ def _collect_view_uploads():
     files = []
     manifest_payload = []
     used_names = set()
-    view_fields = (
-        ("isometric", "isometric_images", 0),
-        ("top", "top_images", 1),
-        ("face", "face_images", 2),
-    )
-
-    for view, field_name, angle_index in view_fields:
+    for view, field_name, angle_index in VIEW_UPLOAD_FIELDS:
         for uploaded_file in request.files.getlist(field_name):
             if not uploaded_file or not uploaded_file.filename:
                 continue
@@ -183,17 +178,7 @@ def _collect_view_uploads():
             if not original_name:
                 abort(400, "An uploaded image has an invalid filename.")
 
-            output_name = original_name
-            if output_name.casefold() in used_names:
-                stem = Path(original_name).stem or "cutter_image"
-                suffix = Path(original_name).suffix
-                output_name = f"{view}_{original_name}"
-                counter = 2
-                while output_name.casefold() in used_names:
-                    output_name = f"{view}_{stem}_{counter}{suffix}"
-                    counter += 1
-
-            used_names.add(output_name.casefold())
+            output_name = unique_view_filename(view, original_name, used_names)
             uploaded_file.filename = output_name
             files.append(uploaded_file)
             manifest_payload.append({
