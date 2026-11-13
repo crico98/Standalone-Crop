@@ -1,30 +1,119 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>View-specific Cutter Cropper</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
-<body><main class="shell">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>View-specific Cutter Cropper</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+.view-upload-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0}
+.view-upload-card{min-width:0;border:1px solid #dce3eb;border-radius:12px;padding:16px;background:#fff}
+.view-upload-card h2{margin:0 0 4px;font-size:18px}
+.view-upload-card .muted{margin:0 0 12px}
+.dropzone{min-height:190px;border:2px dashed #aab9c7;border-radius:10px;background:#f7f9fb;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px;cursor:pointer;transition:background .15s,border-color .15s}
+.dropzone.dragover{border-color:#126b55;background:#eaf7f1}
+.dropzone .drop-icon{font-size:30px;line-height:1;color:#126b55;margin-bottom:9px}
+.dropzone strong{font-size:14px}
+.dropzone span{font-size:12px;color:#687789;margin-top:5px}
+.dropzone input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.selected-files{font-size:12px;color:#536273;max-height:130px;overflow:auto;margin:10px 0 0;padding-left:18px;overflow-wrap:anywhere}
+.selected-files:empty{display:none}
+.upload-submit{width:100%;margin-top:8px;background:#126b55}
+.upload-note{margin:12px 0 0}
+@media(max-width:800px){.view-upload-grid{grid-template-columns:1fr}.dropzone{min-height:135px}}
+</style>
+</head>
+<body>
+<main class="shell wide">
 <h1>View-specific Cutter Cropper</h1>
-<p class="sub">Upload cutter photos with a JSON manifest that explicitly assigns each photo an angle_index. EXIF orientation is corrected automatically.</p>
+<p class="sub">Drop each group of cutter photos into its matching view. The upload area assigns the view automatically, so you no longer need to create a JSON manifest by hand.</p>
 <ul class="muted">
 <li>Face V2 segmentation: {{ "ready" if model_available else "checkpoint missing" }}</li>
 <li>Top detector: {{ "ready" if top_model_available else "checkpoint missing" }}</li>
 <li>Isometric detector: {{ "ready" if isometric_model_available else "checkpoint missing" }}</li>
 </ul>
-{% if not model_available or not top_model_available or not isometric_model_available %}<p class="notice warn">One or more model checkpoints are not present locally. That view will report a processing error until its trained best.pt checkpoint is restored under models/.</p>{% endif %}
+{% if not model_available or not top_model_available or not isometric_model_available %}
+<p class="notice warn">One or more model checkpoints are not present locally. That view will report a processing error until its trained best.pt checkpoint is restored under models/.</p>
+{% endif %}
 {% if error %}<p class="notice bad">{{ error }}</p>{% endif %}
+
 <form class="upload" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
-<label for="images">Choose cutter photos</label>
-<input id="images" name="images" type="file" accept=".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,image/*" multiple required>
-<label for="manifest">Choose the JSON manifest (photo filename + angle_index)</label>
-<input id="manifest" name="manifest" type="file" accept=".json,application/json" required>
-<p class="muted">Manifest mapping: angle_index 0 = Isometric, 1 = Top, 2 = Face. Each record must contain file_path and angle_index. The filename is used only to match the photo.</p>
-<p id="selection" class="muted">No images selected.</p>
-<button type="submit">Upload and group by angle_index</button></form>
-<p class="muted">Supported: JPG, PNG, WEBP, BMP, TIFF. Combined upload limit: {{ max_upload_mb }} MB. Maximum {{ max_files }} images per batch.</p>
-<p class="muted">Change the combined upload limit with the CROPPER_MAX_UPLOAD_MB environment variable. EXIF orientation is normalized automatically during upload; use manual rotation only for any remaining correction.</p>
+  <div class="view-upload-grid">
+    <section class="view-upload-card">
+      <h2>Isometric</h2>
+      <p class="muted">angle_index 0 · Diamond table</p>
+      <label class="dropzone" data-dropzone>
+        <input type="file" name="isometric_images" accept=".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,image/*" multiple>
+        <span class="drop-icon">＋</span>
+        <strong>Drop all Isometric images here</strong>
+        <span>or click to browse · multiple images</span>
+      </label>
+      <ul class="selected-files" aria-live="polite"></ul>
+    </section>
+
+    <section class="view-upload-card">
+      <h2>Top</h2>
+      <p class="muted">angle_index 1 · Complete cutter</p>
+      <label class="dropzone" data-dropzone>
+        <input type="file" name="top_images" accept=".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,image/*" multiple>
+        <span class="drop-icon">＋</span>
+        <strong>Drop all Top images here</strong>
+        <span>or click to browse · multiple images</span>
+      </label>
+      <ul class="selected-files" aria-live="polite"></ul>
+    </section>
+
+    <section class="view-upload-card">
+      <h2>Face</h2>
+      <p class="muted">angle_index 2 · Cutter face</p>
+      <label class="dropzone" data-dropzone>
+        <input type="file" name="face_images" accept=".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,image/*" multiple>
+        <span class="drop-icon">＋</span>
+        <strong>Drop all Face images here</strong>
+        <span>or click to browse · multiple images</span>
+      </label>
+      <ul class="selected-files" aria-live="polite"></ul>
+    </section>
+  </div>
+  <button class="upload-submit" type="submit">Upload images and start batch</button>
+  <p class="muted upload-note">Supported: JPG, PNG, WEBP, BMP, TIFF. Combined upload limit: {{ max_upload_mb }} MB. Maximum {{ max_files }} images per batch. Images are EXIF-normalized after upload as before.</p>
+</form>
+
+<p class="muted">This view-dropzone interface is isolated to the prototype branch. The manifest is generated from the selected dropzone; processing order remains Isometric → Top → Face. Existing model and crop behavior is unchanged.</p>
 <p><a class="download" href="{{ url_for('top_isometric.editor') }}">Open Top / Isometric Annotation Editor</a></p>
 </main>
 <script>
-const input=document.getElementById('images'),selection=document.getElementById('selection');
-input.addEventListener('change',()=>{const files=Array.from(input.files||[]),total=files.reduce((s,f)=>s+f.size,0);
-selection.textContent=files.length?`${files.length} image(s) selected · ${(total/1048576).toFixed(1)} MB combined`:'No images selected.';});
-</script></body></html>
+document.querySelectorAll("[data-dropzone]").forEach((zone) => {
+  const input = zone.querySelector("input");
+  const list = zone.parentElement.querySelector(".selected-files");
+  const renderFiles = (files) => {
+    list.replaceChildren();
+    Array.from(files).forEach((file) => {
+      const item = document.createElement("li");
+      item.textContent = file.name;
+      list.appendChild(item);
+    });
+    const count = files.length;
+    const summary = zone.querySelector("strong");
+    summary.textContent = count
+      ? count + " image(s) selected"
+      : "Drop " + zone.closest(".view-upload-card").querySelector("h2").textContent + " images here";
+  };
+  input.addEventListener("change", () => renderFiles(input.files));
+  zone.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    zone.classList.add("dragover");
+  });
+  zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+  zone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    zone.classList.remove("dragover");
+    if (event.dataTransfer.files.length) {
+      input.files = event.dataTransfer.files;
+      renderFiles(input.files);
+    }
+  });
+});
+</script>
+</body>
+</html>
