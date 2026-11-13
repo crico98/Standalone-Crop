@@ -52,23 +52,15 @@ Open http://127.0.0.1:5000.
 
 ## Run a batch
 
-1. Prepare a JSON array using file_path and angle_index for every image.
-2. On the upload page, select all batch photos.
-3. Select the matching JSON manifest.
-4. Submit the batch and review the view label and crop result for each photo.
+On this prototype branch, the upload page has three independent multi-file dropzones:
 
-Example record:
+- Drop all Isometric photos into **Isometric**.
+- Drop all Top photos into **Top**.
+- Drop all Face photos into **Face**.
 
-~~~json
-[
-  {
-    "file_path": "DSC_0560.JPG",
-    "angle_index": 2
-  }
-]
-~~~
+The server creates the manifest from the selected dropzone. The assignments remain explicit: Isometric = 0, Top = 1, Face = 2. Processing remains Isometric → Top → Face, preserving upload order within each view. Duplicate filenames across or within dropzones are given a unique view-prefixed name so every uploaded photo can be matched unambiguously.
 
-The manifest must include every uploaded image exactly once. The app rejects missing, duplicate, unsupported, or unmatched records rather than guessing a view.
+The original JSON-manifest upload contract remains supported for older clients and scripts. The three-dropzone interface is intentionally isolated to this prototype branch and is not a main-branch integration.
 
 ## Documentation
 
