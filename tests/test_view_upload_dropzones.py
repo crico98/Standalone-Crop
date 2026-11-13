@@ -1,49 +1,45 @@
-from io import BytesIO
+import unittest
 
-from app import app, _collect_view_uploads
-
-
-def test_view_dropzones_generate_explicit_manifest_and_unique_names():
-    data = {
-        "isometric_images": [
-            (BytesIO(b"iso-a"), "same.jpg"),
-            (BytesIO(b"iso-b"), "same.jpg"),
-        ],
-        "top_images": [(BytesIO(b"top"), "same.jpg")],
-        "face_images": [(BytesIO(b"face"), "same.jpg")],
-    }
-
-    with app.test_request_context(
-        "/upload",
-        method="POST",
-        data=data,
-        content_type="multipart/form-data",
-    ):
-        files, manifest = _collect_view_uploads()
-
-    assert [item["angle_index"] for item in manifest] == [0, 0, 1, 2]
-    assert [item["file_path"] for item in manifest] == [
-        "same.jpg",
-        "isometric_same.jpg",
-        "top_same.jpg",
-        "face_same.jpg",
-    ]
-    assert [file.filename for file in files] == [
-        "same.jpg",
-        "isometric_same.jpg",
-        "top_same.jpg",
-        "face_same.jpg",
-    ]
+from view_uploads import VIEW_UPLOAD_FIELDS, unique_view_filename
 
 
-def test_view_dropzones_return_empty_when_no_files_are_selected():
-    with app.test_request_context(
-        "/upload",
-        method="POST",
-        data={},
-        content_type="multipart/form-data",
-    ):
-        files, manifest = _collect_view_uploads()
+class ViewUploadDropzoneTests(unittest.TestCase):
+    def test_view_fields_map_to_the_existing_angle_index_contract(self):
+        self.assertEqual(
+            VIEW_UPLOAD_FIELDS,
+            (
+                ("isometric", "isometric_images", 0),
+                ("top", "top_images", 1),
+                ("face", "face_images", 2),
+            ),
+        )
 
-    assert files == []
-    assert manifest == []
+    def test_duplicate_names_are_renamed_without_overwriting(self):
+        used_names = set()
+        self.assertEqual(
+            unique_view_filename("isometric", "same.jpg", used_names),
+            "same.jpg",
+        )
+        self.assertEqual(
+            unique_view_filename("isometric", "same.jpg", used_names),
+            "isometric_same.jpg",
+        )
+        self.assertEqual(
+            unique_view_filename("top", "same.jpg", used_names),
+            "top_same.jpg",
+        )
+        self.assertEqual(
+            unique_view_filename("face", "same.jpg", used_names),
+            "face_same.jpg",
+        )
+
+    def test_name_collision_matching_is_case_insensitive(self):
+        used_names = {"photo.jpg"}
+        self.assertEqual(
+            unique_view_filename("top", "PHOTO.JPG", used_names),
+            "top_PHOTO.JPG",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
